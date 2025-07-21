@@ -177,7 +177,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .collect();
     
     let lib_cols = LibCols::default();
-    let max_precursors = 4000; // 可以根据需要调整
+    let max_precursors = 8000; // 可以根据需要调整
     
     // 预先构建所有precursor的library data
     let precursor_lib_data_list = prepare_precursor_lib_data(
