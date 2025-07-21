@@ -68,7 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Initializing Multi-CPU processing:");
     println!("  - Number of CPUs (SLURM -c): {}", cpu_config.num_cpus);
     println!("  - Cores per CPU (SLURM -n): {}", cpu_config.cores_per_cpu);
-    println!("  - Total threads: {}", total_threads);
+    println!("  - Total worker threads: {} ({} × {} = {})", 
+             total_threads, cpu_config.num_cpus, cpu_config.cores_per_cpu, total_threads);
     println!("  - NUMA-aware: {}", cpu_config.enable_numa);
     
     // Initialize global thread pool with total thread count
@@ -246,7 +247,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // Process precursors using multi-CPU distribution
     println!("\nDistributing work across {} worker threads ({} CPUs × {} cores per CPU)...", 
-             cpu_config.cores_per_cpu, cpu_config.num_cpus, cpu_config.cores_per_cpu / cpu_config.num_cpus);
+             total_threads, cpu_config.num_cpus, cpu_config.cores_per_cpu);
     
     let batch_results = multi_cpu_processor.process_precursors_distributed(
         precursor_lib_data_list,
@@ -261,7 +262,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\n========== MULTI-CPU BATCH PROCESSING SUMMARY ==========");
     println!("Configuration:");
     println!("  - Number of CPUs (SLURM -c): {}", cpu_config.num_cpus);
-    println!("  - Total cores (SLURM -n): {}", cpu_config.cores_per_cpu);
+    println!("  - Cores per CPU (SLURM -n): {}", cpu_config.cores_per_cpu);
     println!("  - Total threads: {}", total_threads);
     println!("  - NUMA-aware: {}", cpu_config.enable_numa);
     println!("\nResults:");

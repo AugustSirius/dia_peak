@@ -5,8 +5,8 @@
 # Number of CPUs (should match SLURM -c parameter)
 num_cpus = 2
 
-# Total cores across all CPUs (should match SLURM -n parameter)
-# This is the total number of worker threads that will be spawned
+# Cores per CPU (should match SLURM -n parameter)
+# Total worker threads = num_cpus × cores_per_cpu = 2 × 8 = 16
 cores_per_cpu = 8
 
 # Enable NUMA-aware processing

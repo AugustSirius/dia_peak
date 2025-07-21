@@ -90,7 +90,8 @@ impl MultiCpuProcessor {
         }
         
         // Send termination signals for all workers
-        for _ in 0..self.config.cores_per_cpu {
+        let total_workers = self.config.num_cpus * self.config.cores_per_cpu;
+        for _ in 0..total_workers {
             work_sender.send(None)?;
         }
         
@@ -98,7 +99,7 @@ impl MultiCpuProcessor {
         let mut handles = vec![];
         
         // We spawn one worker thread per core across all CPUs
-        let total_workers = self.config.cores_per_cpu; // This matches SLURM -n
+        let total_workers = self.config.num_cpus * self.config.cores_per_cpu; // Total threads
         
         for worker_id in 0..total_workers {
             let work_receiver = Arc::clone(&work_receiver);
@@ -120,12 +121,11 @@ impl MultiCpuProcessor {
                 if enable_numa {
                     if let Ok(core_ids) = core_affinity::get_core_ids() {
                         // Calculate which CPU this worker should run on
-                        let cpu_id = worker_id % num_cpus;
-                        let cores_per_physical_cpu = core_ids.len() / num_cpus;
-                        let core_offset = worker_id / num_cpus;
+                        let cpu_id = worker_id / cores_per_cpu; // Which CPU
+                        let core_within_cpu = worker_id % cores_per_cpu; // Which core on that CPU
                         
-                        // Calculate the specific core for this worker
-                        let target_core = cpu_id * cores_per_physical_cpu + core_offset;
+                        // Calculate the specific physical core for this worker
+                        let target_core = worker_id; // Simple mapping: worker_id maps to core_id
                         
                         if target_core < core_ids.len() {
                             // Set affinity to specific core
@@ -140,7 +140,8 @@ impl MultiCpuProcessor {
                                 // Process work items within this CPU's thread pool
                                 pool.install(|| {
                                     process_cpu_work(
-                                        cpu_id,
+                                        worker_id,
+                                        num_cpus,
                                         work_receiver,
                                         &ms1_indexed,
                                         &finder,
@@ -231,7 +232,8 @@ fn process_cpu_work(
     failed: &AtomicUsize,
     cpu_stats: &Arc<Mutex<Vec<AtomicUsize>>>,
 ) {
-    let cpu_id = worker_id % num_cpus; // Determine which CPU this worker belongs to
+    // cpu_stats has num_cpus entries, so we can safely use modulo
+    let cpu_id = worker_id % num_cpus; // Simple round-robin distribution across CPUs
     loop {
         // Get work item
         let precursor_data = {
