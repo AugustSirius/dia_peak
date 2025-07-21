@@ -119,7 +119,7 @@ impl MultiCpuProcessor {
             let handle = thread::spawn(move || {
                 // Set CPU affinity if supported
                 if enable_numa {
-                    if let Ok(core_ids) = core_affinity::get_core_ids() {
+                    if let Some(core_ids) = core_affinity::get_core_ids() {
                         // Calculate which CPU this worker should run on
                         let cpu_id = worker_id / cores_per_cpu; // Which CPU
                         let core_within_cpu = worker_id % cores_per_cpu; // Which core on that CPU
