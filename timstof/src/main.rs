@@ -22,11 +22,24 @@ use ndarray::{Array2, Array3, Array4, s, Axis};
 use polars::prelude::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Initialize global thread pool with all available CPU cores
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_cpus::get())
-        .build_global()
-        .unwrap();
+    // Configurable parallel processing parameter
+    let parallel_threads = 4; // Set to 1 for sequential, 2+ for parallel processing
+    
+    // Initialize global thread pool based on parallel_threads setting
+    if parallel_threads > 1 {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(parallel_threads)
+            .build_global()
+            .unwrap();
+        println!("Initialized parallel processing with {} threads", parallel_threads);
+    } else {
+        // For sequential processing, still initialize rayon with 1 thread
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build_global()
+            .unwrap();
+        println!("Running in sequential mode (1 thread)");
+    }
     
     let args: Vec<String> = env::args().collect();
     
@@ -173,29 +186,68 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let batch_start = Instant::now();
     
-    // 顺序处理每个precursor
-    for (idx, precursor_data) in precursor_lib_data_list.iter().enumerate() {
-        println!("\n--- Processing precursor {}/{} ---", idx + 1, precursor_lib_data_list.len());
-        
-        match process_single_precursor(
-            precursor_data,
-            &ms1_indexed,
-            &finder,
-            frag_repeat_num,
-            device,
-            output_dir,
-        ) {
-            Ok(_) => {
-                println!("✓ Successfully processed: {}", precursor_data.precursor_id);
-            },
-            Err(e) => {
-                eprintln!("✗ Error processing {}: {}", precursor_data.precursor_id, e);
+    // Process precursors based on parallel_threads setting
+    if parallel_threads == 1 {
+        // Sequential processing
+        println!("Processing precursors sequentially...");
+        for (idx, precursor_data) in precursor_lib_data_list.iter().enumerate() {
+            println!("\n--- Processing precursor {}/{} ---", idx + 1, precursor_lib_data_list.len());
+            
+            match process_single_precursor(
+                precursor_data,
+                &ms1_indexed,
+                &finder,
+                frag_repeat_num,
+                device,
+                output_dir,
+            ) {
+                Ok(_) => {
+                    println!("✓ Successfully processed: {}", precursor_data.precursor_id);
+                },
+                Err(e) => {
+                    eprintln!("✗ Error processing {}: {}", precursor_data.precursor_id, e);
+                }
             }
         }
+    } else {
+        // Parallel processing
+        println!("Processing precursors in parallel with {} threads...", parallel_threads);
+        
+        // Use atomic counter for progress tracking in parallel mode
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let processed_count = AtomicUsize::new(0);
+        let total_count = precursor_lib_data_list.len();
+        
+        // Process in parallel using rayon
+        precursor_lib_data_list.par_iter().for_each(|precursor_data| {
+            let result = process_single_precursor(
+                precursor_data,
+                &ms1_indexed,
+                &finder,
+                frag_repeat_num,
+                device,
+                output_dir,
+            );
+            
+            // Update progress counter
+            let current = processed_count.fetch_add(1, Ordering::SeqCst) + 1;
+            
+            match result {
+                Ok(_) => {
+                    println!("[{}/{}] ✓ Successfully processed: {}", 
+                             current, total_count, precursor_data.precursor_id);
+                },
+                Err(e) => {
+                    eprintln!("[{}/{}] ✗ Error processing {}: {}", 
+                              current, total_count, precursor_data.precursor_id, e);
+                }
+            }
+        });
     }
     
     let batch_elapsed = batch_start.elapsed();
     println!("\n========== BATCH PROCESSING SUMMARY ==========");
+    println!("Processing mode: {}", if parallel_threads == 1 { "Sequential".to_string() } else { format!("Parallel ({} threads)", parallel_threads) });
     println!("Total batch processing time: {:.5} seconds", batch_elapsed.as_secs_f32());
     println!("Average time per precursor: {:.5} seconds", 
              batch_elapsed.as_secs_f32() / precursor_lib_data_list.len() as f32);
