@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // Set data folder path
     let d_folder = args.get(1).cloned().unwrap_or_else(|| {
-        "/Users/augustsirius/Desktop/DIABERT_test_code_lib/CAD20220207yuel_TPHP_DIA_pool1_Slot2-54_1_4382.d".to_string()
+        "/storage/guotiannanLab/wangshuaiyao/006.DIABERT_TimsTOF_Rust/test_data/CAD20220207yuel_TPHP_DIA_pool1_Slot2-54_1_4382.d".to_string()
     });
     
     let d_path = Path::new(&d_folder);
@@ -109,11 +109,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\n========== LIBRARY AND REPORT PROCESSING ==========");
     let lib_processing_start = Instant::now();
     
-    let lib_file_path = "/Users/augustsirius/Desktop/DIABERT_test_code_lib/helper/lib/TPHPlib_frag1025_swissprot_final_all_from_Yueliang.tsv";
+    let lib_file_path = "/storage/guotiannanLab/wangshuaiyao/777.library/TPHPlib_frag1025_swissprot_final_all_from_Yueliang.tsv";
     let library_records = process_library_fast(lib_file_path)?;
     let library_df = library_records_to_dataframe(library_records.clone())?;
     
-    let report_file_path = "/Users/augustsirius/Desktop/DIABERT_test_code_lib/helper/report/report.parquet";
+    let report_file_path = "/storage/guotiannanLab/wangshuaiyao/006.DIABERT_TimsTOF_Rust/test_data/report.parquet";
     let report_df = read_parquet_with_polars(report_file_path)?;
     
     let diann_result = merge_library_and_report(library_df, report_df)?;
