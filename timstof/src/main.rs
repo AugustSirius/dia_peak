@@ -23,7 +23,7 @@ use polars::prelude::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Configurable parallel processing parameter
-    let parallel_threads = 4; // Set to 1 for sequential, 2+ for parallel processing
+    let parallel_threads = 8; // Set to 1 for sequential, 2+ for parallel processing
     
     // Initialize global thread pool based on parallel_threads setting
     if parallel_threads > 1 {
@@ -67,15 +67,39 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     
-    // Set data folder path
-    let d_folder = args.get(1).cloned().unwrap_or_else(|| {
-        "/storage/guotiannanLab/wangshuaiyao/006.DIABERT_TimsTOF_Rust/test_data/CAD20220207yuel_TPHP_DIA_pool1_Slot2-54_1_4382.d".to_string()
-    });
+    // Automatic OS detection and file path assignment
+    let is_macos = std::env::consts::OS == "macos";
+    println!("Detected OS: {}", std::env::consts::OS);
+    println!("Using macOS paths: {}", is_macos);
+    
+    // Set file paths based on OS detection
+    let (default_data_folder, lib_file_path, report_file_path) = if is_macos {
+        // macOS paths
+        (
+            "/Users/augustsirius/Desktop/raw_data/CAD20220207yuel_TPHP_DIA_pool1_Slot2-54_1_4382.d".to_string(),
+            "/Users/augustsirius/Desktop/raw_data/TPHPlib_frag1025_swissprot_final_all_from_Yueliang.tsv",
+            "/Users/augustsirius/Desktop/raw_data/report.parquet"
+        )
+    } else {
+        // Non-macOS paths (original paths)
+        (
+            "/storage/guotiannanLab/wangshuaiyao/006.DIABERT_TimsTOF_Rust/test_data/CAD20220207yuel_TPHP_DIA_pool1_Slot2-54_1_4382.d".to_string(),
+            "/storage/guotiannanLab/wangshuaiyao/777.library/TPHPlib_frag1025_swissprot_final_all_from_Yueliang.tsv",
+            "/storage/guotiannanLab/wangshuaiyao/006.DIABERT_TimsTOF_Rust/test_data/report.parquet"
+        )
+    };
+    
+    // Set data folder path (can still be overridden by command line argument)
+    let d_folder = args.get(1).cloned().unwrap_or(default_data_folder);
     
     let d_path = Path::new(&d_folder);
     if !d_path.exists() {
         return Err(format!("folder {:?} not found", d_path).into());
     }
+    
+    println!("Using data folder: {}", d_folder);
+    println!("Using library file: {}", lib_file_path);
+    println!("Using report file: {}", report_file_path);
     
     // ================================ DATA LOADING AND INDEXING ================================
     let cache_manager = CacheManager::new();
@@ -122,11 +146,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\n========== LIBRARY AND REPORT PROCESSING ==========");
     let lib_processing_start = Instant::now();
     
-    let lib_file_path = "/storage/guotiannanLab/wangshuaiyao/777.library/TPHPlib_frag1025_swissprot_final_all_from_Yueliang.tsv";
     let library_records = process_library_fast(lib_file_path)?;
     let library_df = library_records_to_dataframe(library_records.clone())?;
     
-    let report_file_path = "/storage/guotiannanLab/wangshuaiyao/006.DIABERT_TimsTOF_Rust/test_data/report.parquet";
     let report_df = read_parquet_with_polars(report_file_path)?;
     
     let diann_result = merge_library_and_report(library_df, report_df)?;
@@ -155,7 +177,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .collect();
     
     let lib_cols = LibCols::default();
-    let max_precursors = 400; // 可以根据需要调整
+    let max_precursors = 4000; // 可以根据需要调整
     
     // 预先构建所有precursor的library data
     let precursor_lib_data_list = prepare_precursor_lib_data(
