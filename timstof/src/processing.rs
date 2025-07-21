@@ -22,10 +22,10 @@ pub fn process_single_precursor(
     device: &str,
     output_dir: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let start_time = Instant::now();
+    // let start_time = Instant::now();
     
-    println!("\n========== Processing Precursor: {} ==========", precursor_data.precursor_id);
-    println!("RT: {:.2}, IM: {:.4}", precursor_data.rt, precursor_data.im);
+    // println!("\n========== Processing Precursor: {} ==========", precursor_data.precursor_id);
+    // println!("RT: {:.2}, IM: {:.4}", precursor_data.rt, precursor_data.im);
     
     // Step 1: Build tensor representations
     let (ms1_data_tensor, ms2_data_tensor) = build_precursors_matrix_step1(
