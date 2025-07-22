@@ -1,0 +1,33 @@
+# Multi-CPU Configuration File
+# Configuration: 8 CPUs × 8 cores per CPU = 64 total threads
+
+[cpu]
+# Number of CPUs (SLURM -c parameter)
+num_cpus = 8
+
+# Cores per CPU (SLURM -n parameter)
+# Total worker threads = num_cpus × cores_per_cpu = 8 × 8 = 64
+cores_per_cpu = 8
+
+# Enable NUMA-aware processing
+enable_numa = true
+
+[processing]
+# Maximum number of precursors to process
+max_precursors = 8000
+
+# Fragment repeat number
+frag_repeat_num = 5
+
+# Output directory for results
+output_dir = "output_precursors"
+
+[performance]
+# Enable performance monitoring
+monitor_cpu_usage = true
+
+# Print progress every N precursors
+progress_interval = 100
+
+# Work queue buffer size (0 = unbounded)
+queue_buffer_size = 0
