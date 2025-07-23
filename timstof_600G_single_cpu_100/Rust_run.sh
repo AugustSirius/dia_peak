@@ -3,7 +3,7 @@
 #SBATCH -q normal
 #SBATCH -J rust_100t
 #SBATCH -c 1
-#SBATCH -n 100
+#SBATCH -n 80
 #SBATCH --mem 500G
 
 echo "=== Running timstof_600G_single_cpu_100 with 100 threads on 1 CPU ==="
