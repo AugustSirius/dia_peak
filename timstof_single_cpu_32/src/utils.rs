@@ -271,7 +271,7 @@ impl IndexedTimsTOFData {
         let range = self.range_indices(mz_min, mz_max);
         
         let indices: Vec<usize> = (range.start..range.end)
-            .into_par_iter()         // Use parallel filtering for ion mobility
+            // .into_par_iter()         // Use parallel filtering for ion mobility
             .filter(|&i| {
                 let im = self.mobility_values[i];
                 im >= im_min && im <= im_max
@@ -1322,18 +1322,16 @@ pub fn create_rt_im_dicts(df: &DataFrame) -> PolarsResult<(HashMap<String, f32>,
     Ok((rt_dict, im_dict))
 }
 
-// Add these functions to utils.rs after the existing code
-
 pub fn get_rt_list(mut lst: Vec<f32>, target: f32) -> Vec<f32> {
     lst.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
     
     if lst.is_empty() {
-        return vec![0.0; 48];
+        return vec![0.0; 396];
     }
     
-    if lst.len() <= 48 {
+    if lst.len() <= 396 {
         let mut result = lst;
-        result.resize(48, 0.0);
+        result.resize(396, 0.0);
         return result;
     }
     
@@ -1343,14 +1341,42 @@ pub fn get_rt_list(mut lst: Vec<f32>, target: f32) -> Vec<f32> {
         .map(|(idx, _)| idx)
         .unwrap_or(0);
     
-    let start = if closest_idx >= 24 {
-        (closest_idx - 24).min(lst.len() - 48)
+    let start = if closest_idx >= 198 {
+        (closest_idx - 198).min(lst.len() - 396)
     } else {
         0
     };
     
-    lst[start..start + 48].to_vec()
+    lst[start..start + 396].to_vec()
 }
+
+// pub fn get_rt_list(mut lst: Vec<f32>, target: f32) -> Vec<f32> {
+//     lst.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+    
+//     if lst.is_empty() {
+//         return vec![0.0; 48];
+//     }
+    
+//     if lst.len() <= 48 {
+//         let mut result = lst;
+//         result.resize(48, 0.0);
+//         return result;
+//     }
+    
+//     let closest_idx = lst.iter()
+//         .enumerate()
+//         .min_by_key(|(_, &val)| ((val - target).abs() * 1e9) as i32)
+//         .map(|(idx, _)| idx)
+//         .unwrap_or(0);
+    
+//     let start = if closest_idx >= 24 {
+//         (closest_idx - 24).min(lst.len() - 48)
+//     } else {
+//         0
+//     };
+    
+//     lst[start..start + 48].to_vec()
+// }
 
 pub fn build_ext_ms1_matrix(ms1_data_tensor: &Array3<f32>, device: &str) -> Array3<f32> {
     let shape = ms1_data_tensor.shape();
