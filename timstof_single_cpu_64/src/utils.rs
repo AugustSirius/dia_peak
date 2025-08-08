@@ -271,7 +271,7 @@ impl IndexedTimsTOFData {
         let range = self.range_indices(mz_min, mz_max);
         
         let indices: Vec<usize> = (range.start..range.end)
-            .into_par_iter()         // Use parallel filtering for ion mobility
+            // .into_par_iter()         // Use parallel filtering for ion mobility
             .filter(|&i| {
                 let im = self.mobility_values[i];
                 im >= im_min && im <= im_max

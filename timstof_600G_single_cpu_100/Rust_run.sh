@@ -4,7 +4,7 @@
 #SBATCH -J rust_100t
 #SBATCH -c 1
 #SBATCH -n 64
-#SBATCH --mem 600G
+#SBATCH --mem 400G
 
 echo "=== Running timstof_600G_single_cpu_100 with 100 threads on 1 CPU ==="
 echo "Job ID: $SLURM_JOB_ID"
